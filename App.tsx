@@ -242,17 +242,17 @@ const App: React.FC = () => {
               <div>
                 <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">Navigation</h5>
                 <ul className="space-y-4 text-sm font-bold text-slate-600 dark:text-slate-300">
-                  <li><a href="https://www.webseotrends.com" className="hover:text-brand-600 transition-colors">Digital Blog</a></li>
-                  <li><a href="#" className="hover:text-brand-600 transition-colors">SEO Services</a></li>
-                  <li><a href="#" className="hover:text-brand-600 transition-colors">Case Studies</a></li>
+                  <li><a href="https://webseotrends.com/blog/" className="hover:text-brand-600 transition-colors">Digital Blog</a></li>
+                  <li><a href="https://webseotrends.com/seo/packages/" className="hover:text-brand-600 transition-colors">SEO Services</a></li>
+                  <li><a href="https://webseotrends.com/seo/services/" className="hover:text-brand-600 transition-colors">SEO Case Studies</a></li>
                 </ul>
               </div>
               <div>
                 <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">Connect</h5>
                 <ul className="space-y-4 text-sm font-bold text-slate-600 dark:text-slate-300">
                   <li><a href="https://www.pinterest.com/webseotrends/" className="hover:text-brand-600 transition-colors">Pinterest</a></li>
-                  <li><a href="#" className="hover:text-brand-600 transition-colors">Twitter (X)</a></li>
-                  <li><a href="#" className="hover:text-brand-600 transition-colors">LinkedIn</a></li>
+                  <li><a href="https://x.com/webseotrends" className="hover:text-brand-600 transition-colors">Twitter (X)</a></li>
+                  <li><a href="https://www.linkedin.com/in/er-mani-pathak/" className="hover:text-brand-600 transition-colors">LinkedIn</a></li>
                 </ul>
               </div>
             </div>
