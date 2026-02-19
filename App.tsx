@@ -5,7 +5,7 @@ import CategoryFilter from './components/CategoryFilter';
 import PinCard from './components/PinCard';
 import { fetchPins } from './services/pinterestService';
 import { Pin, Category } from './types';
-import { Loader2, Search, ArrowUpCircle, TrendingUp, Zap, Target, Globe, HelpCircle, Mail, ChevronRight, Bookmark } from 'lucide-react';
+import { Loader2, Search, ArrowUpCircle, TrendingUp, Zap, Target, Globe, HelpCircle, Mail, ChevronRight, Bookmark, X } from 'lucide-react';
 
 const App: React.FC = () => {
   const [pins, setPins] = useState<any[]>([]);
@@ -15,8 +15,14 @@ const App: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showOnlyBookmarks, setShowOnlyBookmarks] = useState(false);
+  const [bookmarkTrigger, setBookmarkTrigger] = useState(0);
 
+  // Sync with URL parameters and handle scroll
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('q') || params.get('query');
+    if (query) setSearchTerm(query);
+
     const loadData = async () => {
       setLoading(true);
       const fetchedPins = await fetchPins();
@@ -31,9 +37,28 @@ const App: React.FC = () => {
       setScrollProgress(progress);
       setShowScrollTop(window.scrollY > 500);
     };
+
+    // Update bookmark count trigger when storage changes (from other tabs or same window)
+    const handleStorageChange = () => setBookmarkTrigger(prev => prev + 1);
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
+
+  // Sync searchTerm state back to URL for SEO/Shareability
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (searchTerm) {
+      url.searchParams.set('q', searchTerm);
+    } else {
+      url.searchParams.delete('q');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }, [searchTerm]);
 
   const filteredPins = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
@@ -50,11 +75,16 @@ const App: React.FC = () => {
       const cleanTitle = (pin.title || '').toLowerCase();
       const categoryTag = (pin.detectedCategory || '').toLowerCase();
       
-      return cleanTitle.includes(term) || cleanDescription.includes(term) || categoryTag.includes(term);
+      return cleanTitle.includes(term) || 
+             cleanDescription.includes(term) || 
+             categoryTag.includes(term);
     });
-  }, [pins, selectedCategory, searchTerm, showOnlyBookmarks]);
+    // We add bookmarkTrigger so saved view updates when bookmarks change
+  }, [pins, selectedCategory, searchTerm, showOnlyBookmarks, bookmarkTrigger]);
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const clearSearch = () => setSearchTerm('');
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-brand-100 selection:text-brand-900 dark:bg-slate-950 transition-colors">
@@ -94,8 +124,16 @@ const App: React.FC = () => {
                     placeholder="Search over 5,000+ SEO visual assets..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-14 pr-6 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all text-xl dark:text-white"
+                    className="w-full pl-14 pr-12 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all text-xl dark:text-white"
                   />
+                  {searchTerm && (
+                    <button 
+                      onClick={clearSearch}
+                      className="absolute right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -123,21 +161,47 @@ const App: React.FC = () => {
         </section>
 
         {/* PIN GALLERY */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-20">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-20" id="gallery">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-12 gap-8">
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">
                 Gallery
               </h2>
-              <button 
-                onClick={() => setShowOnlyBookmarks(!showOnlyBookmarks)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${showOnlyBookmarks ? 'bg-brand-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200'}`}
-              >
-                <Bookmark className={`w-3.5 h-3.5 ${showOnlyBookmarks ? 'fill-current' : ''}`} />
-                <span>Saved Pins</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => setShowOnlyBookmarks(!showOnlyBookmarks)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${showOnlyBookmarks ? 'bg-brand-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200'}`}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${showOnlyBookmarks ? 'fill-current' : ''}`} />
+                  <span>Saved</span>
+                </button>
+                {searchTerm && (
+                  <span className="text-[10px] font-black bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full text-slate-500 uppercase tracking-widest">
+                    {filteredPins.length} Results Found
+                  </span>
+                )}
+              </div>
             </div>
-            <CategoryFilter selected={selectedCategory} onSelect={setSelectedCategory} />
+            
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+               {/* Inline Search Bar for the Gallery Section */}
+               <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input 
+                  type="text"
+                  placeholder="Filter results..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500 transition-all"
+                />
+                {searchTerm && (
+                  <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <X className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                )}
+              </div>
+              <CategoryFilter selected={selectedCategory} onSelect={setSelectedCategory} />
+            </div>
           </div>
 
           {loading ? (
@@ -151,7 +215,11 @@ const App: React.FC = () => {
           ) : (
             <div className="pin-grid animate-slide-in">
               {filteredPins.map((pin) => (
-                <PinCard key={pin.guid} pin={pin} />
+                <PinCard 
+                  key={pin.guid} 
+                  pin={pin} 
+                  onBookmarkChange={() => setBookmarkTrigger(prev => prev + 1)}
+                />
               ))}
               {filteredPins.length === 0 && (
                 <div className="col-span-full py-40 text-center bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
@@ -242,17 +310,17 @@ const App: React.FC = () => {
               <div>
                 <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">Navigation</h5>
                 <ul className="space-y-4 text-sm font-bold text-slate-600 dark:text-slate-300">
-                  <li><a href="https://webseotrends.com/blog/" className="hover:text-brand-600 transition-colors">Digital Blog</a></li>
-                  <li><a href="https://webseotrends.com/seo/packages/" className="hover:text-brand-600 transition-colors">SEO Services</a></li>
-                  <li><a href="https://webseotrends.com/seo/services/" className="hover:text-brand-600 transition-colors">SEO Case Studies</a></li>
+                  <li><a href="https://www.webseotrends.com" className="hover:text-brand-600 transition-colors">Digital Blog</a></li>
+                  <li><a href="#" className="hover:text-brand-600 transition-colors">SEO Services</a></li>
+                  <li><a href="#" className="hover:text-brand-600 transition-colors">Case Studies</a></li>
                 </ul>
               </div>
               <div>
                 <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">Connect</h5>
                 <ul className="space-y-4 text-sm font-bold text-slate-600 dark:text-slate-300">
                   <li><a href="https://www.pinterest.com/webseotrends/" className="hover:text-brand-600 transition-colors">Pinterest</a></li>
-                  <li><a href="https://x.com/webseotrends" className="hover:text-brand-600 transition-colors">Twitter (X)</a></li>
-                  <li><a href="https://www.linkedin.com/in/er-mani-pathak/" className="hover:text-brand-600 transition-colors">LinkedIn</a></li>
+                  <li><a href="#" className="hover:text-brand-600 transition-colors">Twitter (X)</a></li>
+                  <li><a href="#" className="hover:text-brand-600 transition-colors">LinkedIn</a></li>
                 </ul>
               </div>
             </div>
