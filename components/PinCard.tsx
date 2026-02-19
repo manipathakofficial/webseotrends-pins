@@ -5,9 +5,10 @@ import { ExternalLink, Bookmark, Share2, Check } from 'lucide-react';
 
 interface PinCardProps {
   pin: Pin & { detectedCategory?: string };
+  onBookmarkChange?: () => void;
 }
 
-const PinCard: React.FC<PinCardProps> = ({ pin }) => {
+const PinCard: React.FC<PinCardProps> = ({ pin, onBookmarkChange }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [shared, setShared] = useState(false);
 
@@ -28,6 +29,7 @@ const PinCard: React.FC<PinCardProps> = ({ pin }) => {
     }
     localStorage.setItem('wst_bookmarks', JSON.stringify(newBookmarks));
     setIsBookmarked(!isBookmarked);
+    if (onBookmarkChange) onBookmarkChange();
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -78,12 +80,14 @@ const PinCard: React.FC<PinCardProps> = ({ pin }) => {
           <button 
             onClick={toggleBookmark}
             className={`p-2.5 rounded-full backdrop-blur-md shadow-lg transition-all active:scale-90 ${isBookmarked ? 'bg-brand-600 text-white' : 'bg-white/80 text-slate-900 hover:bg-white'}`}
+            title={isBookmarked ? "Remove from bookmarks" : "Save pin"}
           >
             <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
           </button>
           <button 
             onClick={handleShare}
             className="p-2.5 rounded-full bg-white/80 backdrop-blur-md text-slate-900 hover:bg-white shadow-lg transition-all active:scale-90"
+            title="Share this pin"
           >
             {shared ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
           </button>
